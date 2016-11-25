@@ -19,7 +19,7 @@ Videos from my friend's youtube channel:
 https://www.youtube.com/user/artnesterof/videos
 
 Blogs:
-- http://forum.rcdesign.ru/blogs/83206/blog19661.html
+- http://forum.rcdesign.ru/blogs/83206/
 
 Enjoy! ;)  
 
