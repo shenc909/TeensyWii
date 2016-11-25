@@ -1,7 +1,7 @@
 #ifndef MULTIWII_H_
 #define MULTIWII_H_
 
-#define  VERSION        241
+#define  VERSION        240
 #define  NAVI_VERSION   7     //This allow sync with GUI
 #include "types.h"
 #include "Alarms.h"
@@ -16,7 +16,7 @@ extern const char boxnames[];
 extern const uint8_t boxids[];
 
 extern uint32_t currentTime;
-extern uint16_t previousTime;
+//extern uint32_t previousTime;
 extern uint16_t cycleTime;
 extern uint16_t calibratingA;
 extern uint16_t calibratingB;
@@ -24,16 +24,13 @@ extern uint16_t calibratingG;
 extern int16_t  magHold,headFreeModeHold;
 extern uint8_t  vbatMin;
 extern uint8_t  rcOptions[CHECKBOXITEMS];
-extern int32_t  AltHold;
-extern int16_t  sonarAlt;
-extern int16_t  BaroPID;
-extern int16_t  errorAltitudeI;
 
 extern int16_t  i2c_errors_count;
 extern uint8_t alarmArray[ALRM_FAC_SIZE];
 extern global_conf_t global_conf;
 
 extern imu_t imu;
+extern ins_t ins;
 extern analog_t analog;
 extern alt_t alt;
 extern att_t att;
@@ -49,7 +46,7 @@ extern flags_struct_t f;
 extern uint16_t intPowerTrigger1;
 
 extern int16_t gyroZero[3];
-extern int16_t angle[2];
+//extern int16_t angle[2];
 
 
 #if BARO
@@ -107,16 +104,17 @@ extern uint16_t lookupThrottleRC[11];
 extern gps_conf_struct GPS_conf;
 
 extern int16_t  GPS_angle[2];           // the angles that must be applied for GPS correction
+extern int32_t  GPS_coord_temp[2];
 extern int32_t  GPS_coord[2];
 extern int32_t  GPS_home[2];
 extern int32_t  GPS_hold[2];
-extern int32_t  GPS_prev[2];
 extern int32_t  GPS_poi[2];             // Coordinates of the current poi
 extern int32_t  GPS_directionToPoi;     // direction to the actual poi (used to set heading to poi)
 extern uint8_t  GPS_numSat;
 extern uint16_t GPS_distanceToHome;     // distance to home  - unit: meter
 extern int16_t  GPS_directionToHome;    // direction to home - unit: degree
 extern uint16_t GPS_altitude;           // GPS altitude      - unit: meter
+//extern uint16_t GPS_HDOP;           	// GPS HDOP      	 - Horizontal dilution of position
 extern uint16_t GPS_speed;              // GPS speed         - unit: cm/s
 extern uint8_t  GPS_update;             // a binary toogle to distinct a GPS position update
 extern uint16_t GPS_ground_course;      //                   - unit: degree*10
@@ -133,23 +131,7 @@ extern uint16_t nav_hold_time;            //time in seconds to hold position
 extern uint8_t NAV_paused_at;             //This contains the mission step where poshold paused the runing mission.
 extern uint8_t next_step;                 //The mission step which is upcoming it equals with the mission_step stored in EEPROM
 
-//Altitude control state
-#define ASCENDING           1
-#define DESCENDING          -1
-#define REACHED_ALT         0
-
-// The orginal altitude used as base our new altitude during nav
-extern int32_t original_altitude;
-//This is the target what we want to reach 
-extern int32_t target_altitude;
-//This is the interim value which is feeded into the althold controller
-extern int32_t alt_to_hold;
-
-extern uint32_t alt_change_timer;
-extern int8_t   alt_change_flag;
-extern uint32_t alt_change;
 extern int16_t  jump_times;             //How many loops do we have to do (alt/100 from mission step) -10 means not used jet, -1 unlimited
-extern uint8_t  land_detect;            //land detector variable
 
 
 // ************************
@@ -157,7 +139,7 @@ extern uint8_t  land_detect;            //land detector variable
 // ************************
 extern mission_step_struct mission_step;
 
-//possible action codes for a mission step 
+//possible action codes for a mission step
 #define MISSION_WAYPOINT      1   //Set waypoint
 #define MISSION_HOLD_UNLIM    2   //Poshold unlimited
 #define MISSION_HOLD_TIME     3   //Hold for a predetermined time
@@ -175,23 +157,41 @@ extern mission_step_struct mission_step;
 #define MISSION_FLAG_DO_LAND     0x20   //Land when reached desired point (used in RTH)
 #define MISSION_FLAG_NAV_IN_PROG 0xff   //Navigation is in progress, returned wp is home
 
+extern int16_t  nav[2];
+#ifndef INS_PH_NAV_ON
+	extern int16_t  nav_rated[2];    //Adding a rate controller to the navigation to make it smoother
+#endif
+
+#endif
+
 #define LAT  0
 #define LON  1
+#define ALT  2
 
-extern int16_t  nav[2];
 
+#ifdef INS_PH_NAV_ON
+	// default POSHOLD control gains for INS
+	#define POSHOLD_P              1.0
+	#define POSHOLD_I              0.9	// in sec, time to predict point to hold when position hold activated
+	#define POSHOLD_IMAX           20   // degrees
 
-#endif 
+	#define POSHOLD_RATE_P         7.0
+	#define POSHOLD_RATE_I         0.2  // Wind control
+	#define POSHOLD_RATE_D         0.02 // x10 here, i.e. 0.2
+	#define POSHOLD_RATE_IMAX      20   // degrees
 
-// default POSHOLD control gains
-#define POSHOLD_P              .15
-#define POSHOLD_I              0.0
-#define POSHOLD_IMAX           20        // degrees
+#else
+	// default POSHOLD control gains
+	#define POSHOLD_P              .13
+	#define POSHOLD_I              0.2
+	#define POSHOLD_IMAX           20   // degrees
 
-#define POSHOLD_RATE_P         3.4
-#define POSHOLD_RATE_I         0.14      // Wind control
-#define POSHOLD_RATE_D         0.053     // try 2 or 3 for POSHOLD_RATE 1
-#define POSHOLD_RATE_IMAX      20        // degrees
+	#define POSHOLD_RATE_P         4.0
+	#define POSHOLD_RATE_I         0.15 // Wind control
+	#define POSHOLD_RATE_D         0.045
+	#define POSHOLD_RATE_IMAX      20   // degrees
+
+#endif
 
 // default Navigation PID gains
 #define NAV_P                  2.5
@@ -232,4 +232,17 @@ extern uint16_t AccInflightCalibrationActive;
 
 void annexCode();
 void go_disarm();
+
+bool updateTimer(timer_t * timer, uint32_t interval);
+void resetTimer(timer_t * timer);
+
+#define HZ2US(hz)   (1000000 / (hz))
+#define HZ2MS(hz)   (1000 / (hz))
+#define HZ2S(hz)    (1.0f / (hz))
+#define US2S(us)    ((us) * 1e-6f)
+#define MS2S(ms)    ((ms) * 1e-3f)
+#define MS2US(ms)   ((ms) * 1000)
+
+
+
 #endif /* MULTIWII_H_ */

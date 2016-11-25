@@ -4,14 +4,14 @@
 #include "def.h"
 #include "types.h"
 #include "EEPROM.h"
-#include "MultiWii.h"
+#include "MahoWii.h"
 #include "Alarms.h"
 #include "GPS.h"
 
 void LoadDefaults(void);
 
 uint8_t calculate_sum(uint8_t *cb , uint8_t siz) {
-  uint8_t sum=0x55;  // checksum init
+  uint8_t sum=0x56;  // checksum init
   while(--siz) sum += *cb++;  // calculate checksum (without checksum byte)
   return sum;
 }
@@ -151,17 +151,17 @@ void LoadDefaults() {
     // #include MY_PRIVATE_DEFAULTS
     // do that at the last possible moment, so we can override virtually all defaults and constants
   #else
-    #if PID_CONTROLLER == 1
-      conf.pid[ROLL].P8     = 33;  conf.pid[ROLL].I8    = 30; conf.pid[ROLL].D8     = 23;
-      conf.pid[PITCH].P8    = 33; conf.pid[PITCH].I8    = 30; conf.pid[PITCH].D8    = 23;
-      conf.pid[PIDLEVEL].P8 = 90; conf.pid[PIDLEVEL].I8 = 10; conf.pid[PIDLEVEL].D8 = 100;
-    #elif PID_CONTROLLER == 2
-      conf.pid[ROLL].P8     = 28;  conf.pid[ROLL].I8    = 10; conf.pid[ROLL].D8     = 7;
-      conf.pid[PITCH].P8    = 28; conf.pid[PITCH].I8    = 10; conf.pid[PITCH].D8    = 7;
-      conf.pid[PIDLEVEL].P8 = 30; conf.pid[PIDLEVEL].I8 = 32; conf.pid[PIDLEVEL].D8 = 0;
+
+	  conf.pid[ROLL].P8     = 35;  conf.pid[ROLL].I8    = 25; conf.pid[ROLL].D8     = 26;
+	  conf.pid[PITCH].P8    = 35; conf.pid[PITCH].I8    = 25; conf.pid[PITCH].D8    = 26;
+	  conf.pid[PIDLEVEL].P8 = 80; conf.pid[PIDLEVEL].I8 = 3;  conf.pid[PIDLEVEL].D8 = 100;
+
+      conf.pid[YAW].P8      = 69;  conf.pid[YAW].I8     = 50;  conf.pid[YAW].D8     = 0;
+    #ifdef MS561101BA
+      conf.pid[PIDALT].P8   = 50; conf.pid[PIDALT].I8   = 20; conf.pid[PIDALT].D8   = 16;
+    #else
+      conf.pid[PIDALT].P8   = 40; conf.pid[PIDALT].I8   = 15; conf.pid[PIDALT].D8   = 16;
     #endif
-    conf.pid[YAW].P8      = 68;  conf.pid[YAW].I8     = 45;  conf.pid[YAW].D8     = 0;
-    conf.pid[PIDALT].P8   = 64; conf.pid[PIDALT].I8   = 25; conf.pid[PIDALT].D8   = 24;
 
     conf.pid[PIDPOS].P8  = POSHOLD_P * 100;     conf.pid[PIDPOS].I8    = POSHOLD_I * 100;       conf.pid[PIDPOS].D8    = 0;
     conf.pid[PIDPOSR].P8 = POSHOLD_RATE_P * 10; conf.pid[PIDPOSR].I8   = POSHOLD_RATE_I * 100;  conf.pid[PIDPOSR].D8   = POSHOLD_RATE_D * 1000;
@@ -171,11 +171,11 @@ void LoadDefaults() {
 
     conf.pid[PIDVEL].P8 = 0;      conf.pid[PIDVEL].I8 = 0;    conf.pid[PIDVEL].D8 = 0;
 
-    conf.rcRate8 = 90; conf.rcExpo8 = 65;
+    conf.rcRate8 = 70; conf.rcExpo8 = 60;
     conf.rollPitchRate = 0;
     conf.yawRate = 0;
     conf.dynThrPID = 0;
-    conf.thrMid8 = 50; conf.thrExpo8 = 0;
+    conf.thrMid8 = 50; conf.thrExpo8 = 35;
     for(i=0;i<CHECKBOXITEMS;i++) {conf.activate[i] = 0;}
     conf.angleTrim[0] = 0; conf.angleTrim[1] = 0;
     conf.powerTrigger1 = 0;
@@ -283,9 +283,9 @@ void loadGPSdefaults(void) {
   GPS_conf.nav_tail_first       = NAV_TAIL_FIRST;
   GPS_conf.nav_rth_takeoff_heading = NAV_SET_TAKEOFF_HEADING;
   GPS_conf.slow_nav                = NAV_SLOW_NAV;
-  GPS_conf.wait_for_rth_alt        = WAIT_FOR_RTH_ALT;
+  GPS_conf.wait_for_target_alt     = WAIT_FOR_TARGET_ALT;
 
-  GPS_conf.ignore_throttle         = IGNORE_THROTTLE;
+//  GPS_conf.ignore_throttle         = IGNORE_THROTTLE;
   GPS_conf.takeover_baro           = NAV_TAKEOVER_BARO;
 
   GPS_conf.wp_radius               = GPS_WP_RADIUS;
@@ -297,7 +297,8 @@ void loadGPSdefaults(void) {
   GPS_conf.nav_bank_max            = NAV_BANK_MAX;
   GPS_conf.rth_altitude            = RTH_ALTITUDE;
   GPS_conf.fence                   = FENCE_DISTANCE;
-  GPS_conf.land_speed              = LAND_SPEED;
+  GPS_conf.min_nav_vario		   = MIN_NAV_VARIO;
+  //GPS_conf.safe_land_speed         = SAFE_LAND_SPEED;
   GPS_conf.max_wp_number           = getMaxWPNumber();
   writeGPSconf();
 }

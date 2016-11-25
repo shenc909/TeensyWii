@@ -2,7 +2,7 @@
 #include "config.h"
 #include "def.h"
 #include "types.h"
-#include "MultiWii.h"
+#include "MahoWii.h"
 #include "Alarms.h"
 
 void initializeSoftPWM(void);
@@ -1168,19 +1168,35 @@ void mixTable() {
     motor[4] = PIDMIX(-1,-2/3,+1); //UNDER_RIGHT
     motor[5] = PIDMIX(+1,-2/3,+1); //UNDER_LEFT
   #elif defined( HEX6 )
-    motor[0] = PIDMIX(-7/8,+1/2,+1); //REAR_R
+    /*motor[0] = PIDMIX(-7/8,+1/2,+1); //REAR_R
     motor[1] = PIDMIX(-7/8,-1/2,-1); //FRONT_R
     motor[2] = PIDMIX(+7/8,+1/2,+1); //REAR_L
     motor[3] = PIDMIX(+7/8,-1/2,-1); //FRONT_L
     motor[4] = PIDMIX(+0  ,-1  ,+1); //FRONT
-    motor[5] = PIDMIX(+0  ,+1  ,-1); //REAR
+    motor[5] = PIDMIX(+0  ,+1  ,-1); //REAR*/
+
+    motor[0] = PIDMIX(-9/10,+4/5,+1); //REAR_R
+    motor[1] = PIDMIX(-9/10,-4/5,-1);//FRONT_R
+    motor[2] = PIDMIX(+9/10,+4/5,+1);//REAR_L
+    motor[3] = PIDMIX(+9/10,-4/5,-1);//FRONT_L
+    motor[4] = PIDMIX(+0 ,-4/5,+1);//FRONT
+    motor[5] = PIDMIX(+0 ,+4/5,-1);//REAR
+
   #elif defined( HEX6X )
-    motor[0] = PIDMIX(-1/2,+7/8,+1); //REAR_R
+    /*motor[0] = PIDMIX(-1/2,+7/8,+1); //REAR_R
     motor[1] = PIDMIX(-1/2,-7/8,+1); //FRONT_R
     motor[2] = PIDMIX(+1/2,+7/8,-1); //REAR_L
     motor[3] = PIDMIX(+1/2,-7/8,-1); //FRONT_L
     motor[4] = PIDMIX(-1  ,+0  ,-1); //RIGHT
-    motor[5] = PIDMIX(+1  ,+0  ,+1); //LEFT
+    motor[5] = PIDMIX(+1  ,+0  ,+1); //LEFT*/
+
+    motor[0] = PIDMIX(-4/5,+9/10,+1); //REAR_R
+    motor[1] = PIDMIX(-4/5,-9/10,+1);//FRONT_R
+    motor[2] = PIDMIX(+4/5,+9/10,-1);//REAR_L
+    motor[3] = PIDMIX(+4/5,-9/10,-1);//FRONT_L
+    motor[4] = PIDMIX(-4/5 ,+0 ,-1);//RIGHT
+    motor[5] = PIDMIX(+4/5 ,+0 ,+1);//LEFT
+
   #elif defined( HEX6H )
     motor[0] = PIDMIX(-1,+1,-1); //REAR_R
     motor[1] = PIDMIX(-1,-1,+1); //FRONT_R
@@ -1565,7 +1581,11 @@ void mixTable() {
       if (maxMotor > MAXTHROTTLE) // this is a way to still have good gyro corrections if at least one motor reaches its max.
         motor[i] -= maxMotor - MAXTHROTTLE;
       motor[i] = constrain(motor[i], conf.minthrottle, MAXTHROTTLE);
-      if ((rcData[THROTTLE] < MINCHECK) && !f.BARO_MODE)
+      if ((rcData[THROTTLE] < MINCHECK) && !f.BARO_MODE
+			#if GPS
+    		  && !f.GPS_BARO_MODE
+			#endif
+			  )
       #ifndef MOTOR_STOP
         motor[i] = conf.minthrottle;
       #else

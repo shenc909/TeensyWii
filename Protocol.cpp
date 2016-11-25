@@ -6,10 +6,12 @@
 #include "LCD.h"
 #include "Output.h"
 #include "GPS.h"
-#include "MultiWii.h"
+#include "MahoWii.h"
 #include "Serial.h"
 #include "Protocol.h"
 #include "RX.h"
+#include "AltHold.h"
+#include "INS.h"
 
 /************************************** MultiWii Serial Protocol *******************************************************/
 // Multiwii Serial Protocol 0 
@@ -181,16 +183,18 @@ void serialCom() {
   static uint8_t offset[UART_NUMBER];
   static uint8_t dataSize[UART_NUMBER];
   static uint8_t c_state[UART_NUMBER];
-  uint32_t timeMax; // limit max time in this function in case of GPS
+  static uint32_t GPS_last_frame_seen; //Last gps frame seen at this time, used to detect stalled gps communication
+  uint32_t timeMax; // limit max time in this function in case of GPS  
 
   timeMax = micros();
-  for(port=0;port<UART_NUMBER;port++) {
+  for (port = 0; port < UART_NUMBER; port++) {
     CURRENTPORT=port;
     #define RX_COND
     #if defined(SERIAL_RX) && (UART_NUMBER > 1)
       #define RX_COND && (RX_SERIAL_PORT != port)
     #endif
     cc = SerialAvailable(port);
+
     while (cc-- RX_COND) {
       bytesTXBuff = SerialUsedTXBuff(port); // indicates the number of occupied bytes in TX buffer
       if (bytesTXBuff > TX_BUFFER_SIZE - 50 ) return; // ensure there is enough free TX buffer to go further (50 bytes margin)
@@ -237,25 +241,47 @@ void serialCom() {
         // SERIAL: try to detect a new nav frame based on the current received buffer
         #if defined(GPS_SERIAL)
         if (GPS_SERIAL == port) {
-          static uint32_t GPS_last_frame_seen; //Last gps frame seen at this time, used to detect stalled gps communication
+
           if (GPS_newFrame(c)) {
             //We had a valid GPS data frame, so signal task scheduler to switch to compute
             if (GPS_update == 1) GPS_update = 0; else GPS_update = 1; //Blink GPS update
             GPS_last_frame_seen = timeMax;
             GPS_Frame = 1;
+
+			#ifdef NMEA
+            	GPS_coord[LAT] = GPS_coord_temp[LAT];
+                GPS_coord[LON] = GPS_coord_temp[LON];
+			#endif
           }
   
-          // Check for stalled GPS, if no frames seen for 1.2sec then consider it LOST
-          if ((timeMax - GPS_last_frame_seen) > 1200000) {
-            //No update since 1200ms clear fix...
+          // Check for stalled GPS, if no frames seen for 1sec then consider it LOST
+          // !!! it' not correct to check here, because if no data on serial it will never happens
+          /*if ((timeMax - GPS_last_frame_seen) > 1000000) {
+            // No update since 1000ms clear fix...
             f.GPS_FIX = 0;
             GPS_numSat = 0;
-          }
+            GPS_reset_nav();
+          }*/
         }
-        if (micros()-timeMax>250) return;  // Limit the maximum execution time of serial decoding to avoid time spike
+        if ((micros() - timeMax) > 250) {
+        	return;  // Limit the maximum execution time of serial decoding to avoid time spike
+        }
         #endif
       #endif // SUPPRESS_ALL_SERIAL_MSP
     } // while
+
+#if defined(GPS_SERIAL)
+		if (GPS_SERIAL == port) {
+			// Check for stalled GPS, if no frames seen for 1sec then consider it LOST
+			if ((timeMax - GPS_last_frame_seen) > 1000000) {
+				// No update since 1000ms clear fix...
+				f.GPS_FIX = 0;
+				GPS_numSat = 0;
+				GPS_reset_nav();
+			}
+		}
+#endif
+
   } // for
 }
 
@@ -397,7 +423,7 @@ void evaluateCommand(uint8_t c) {
         if(f.ANGLE_MODE)   tmp |= 1<<BOXANGLE;
         if(f.HORIZON_MODE) tmp |= 1<<BOXHORIZON;
       #endif
-      #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+      #if BARO
         if(f.BARO_MODE) tmp |= 1<<BOXBARO;
       #endif
       if(f.MAG_MODE) tmp |= 1<<BOXMAG;
@@ -425,6 +451,9 @@ void evaluateCommand(uint8_t c) {
             tmp |= 1<<BOXGPSNAV;
             break;
         }
+      #endif
+	  #if BARO
+        if(f.SAFE_ALT_MODE) tmp |= 1<<BOXSAFEALT;
       #endif
       #if defined(FIXEDWING) || defined(HELICOPTER)
         if(f.PASSTHRU_MODE) tmp |= 1<<BOXPASSTHRU;
@@ -518,8 +547,13 @@ void evaluateCommand(uint8_t c) {
       msp_raw_gps.b     = GPS_numSat;
       msp_raw_gps.c     = GPS_coord[LAT];
       msp_raw_gps.d     = GPS_coord[LON];
+      //debug[0]= GPS_coord[LAT];
+      //debug[1]= GPS_coord[LON];
+
+      //msp_raw_gps.e     = GPS_HDOP * 10;
       msp_raw_gps.e     = GPS_altitude;
       msp_raw_gps.f     = GPS_speed;
+
       msp_raw_gps.g     = GPS_ground_course;
       s_struct((uint8_t*)&msp_raw_gps,16);
       break;
@@ -615,10 +649,10 @@ void evaluateCommand(uint8_t c) {
         mission_step.parameter2 = read16();
         mission_step.parameter3 = read16();
         mission_step.flag     =  read8();
-        if (mission_step.altitude != 0) set_new_altitude(mission_step.altitude);
+        if (mission_step.altitude != 0) setAltToHold(mission_step.altitude);
         GPS_set_next_wp(&mission_step.pos[LAT], &mission_step.pos[LON], &GPS_coord[LAT], &GPS_coord[LON]);
         if ((wp_distance/100) >= GPS_conf.safe_wp_distance) NAV_state = NAV_STATE_NONE;
-        else NAV_state = NAV_STATE_WP_ENROUTE;
+        else NAV_state = NAV_STATE_WP_START;
         break;
       }
       if (NAV_state == NAV_STATE_NONE) { // The Nav state is not zero, so navigation is in progress, silently ignore SET_WP command)

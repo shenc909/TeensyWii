@@ -28,7 +28,6 @@
   #define LCD_TELEMETRY
   #define LCD_TELEMETRY_STEP "01245"
   #define LOG_VALUES 1
-  #define SUPPRESS_BARO_ALTHOLD
   #define VARIOMETER 12
 #elif COPTERTEST == 4
   #define QUADX
@@ -1443,13 +1442,13 @@
 
 #if defined(CRIUS_AIO_PRO) 
   #define MPU6050 
-  #define HMC5883 
-  #define MS561101BA 
+  #define HMC5883
+  #define MS561101BA
   #define ACC_ORIENTATION(X, Y, Z)  {imu.accADC[ROLL]  = -X; imu.accADC[PITCH]  = -Y; imu.accADC[YAW]  =  Z;} 
   #define GYRO_ORIENTATION(X, Y, Z) {imu.gyroADC[ROLL] =  Y; imu.gyroADC[PITCH] = -X; imu.gyroADC[YAW] = -Z;} 
   #define MAG_ORIENTATION(X, Y, Z)  {imu.magADC[ROLL]  =  X; imu.magADC[PITCH]  =  Y; imu.magADC[YAW]  = -Z;} 
-  #define MPU6050_I2C_AUX_MASTER // MAG connected to the AUX I2C bus of MPU6050 
-  #undef INTERNAL_I2C_PULLUPS 
+  #define MPU6050_I2C_AUX_MASTER // MAG connected to the AUX I2C bus of MPU6050
+  #undef INTERNAL_I2C_PULLUPS
   #define I2C_SPEED 400000L         //400kHz fast mode
   //servo pins on AIO board is at pins 44,45,46, then release pins 33,34,35 for other usage
   //eg. pin 33 on AIO can be used for LEDFLASHER output

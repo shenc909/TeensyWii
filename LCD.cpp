@@ -2,7 +2,7 @@
 #include "config.h"
 #include "def.h"
 #include "types.h"
-#include "MultiWii.h"
+#include "MahoWii.h"
 #include "Alarms.h"
 #include "EEPROM.h"
 #include "Output.h"
@@ -986,7 +986,7 @@ const char PROGMEM lcd_param_text07 [] = "Pitch    D";
 const char PROGMEM lcd_param_text08 [] = "Yaw      P";
 const char PROGMEM lcd_param_text09 [] = "Yaw      I";
 const char PROGMEM lcd_param_text10 [] = "Yaw      D";
-#if  BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+#if  BARO
 const char PROGMEM lcd_param_text11 [] = "Alt      P";
 const char PROGMEM lcd_param_text12 [] = "Alt      I";
 const char PROGMEM lcd_param_text13 [] = "Alt      D";
@@ -1137,7 +1137,7 @@ PROGMEM const void * const lcd_param_ptr_table [] = {
 #if (!(PID_CONTROLLER == 1)) || (!defined(COPTER_WITH_SERVO))
   &lcd_param_text10, &conf.pid[YAW].D8, &__D,
 #endif
-#if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+#if BARO
   &lcd_param_text11, &conf.pid[PIDALT].P8, &__P,
   &lcd_param_text12, &conf.pid[PIDALT].I8, &__I,
   &lcd_param_text13, &conf.pid[PIDALT].D8, &__D,
@@ -1185,7 +1185,7 @@ PROGMEM const void * const lcd_param_ptr_table [] = {
       &lcd_param_text42, &conf.activate[BOXHORIZON], &__AUX4,
     #endif
   #endif
-  #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+  #if BARO
     &lcd_param_text43, &conf.activate[BOXBARO], &__AUX1,
     #ifndef SUPPRESS_LCD_CONF_AUX2
       &lcd_param_text43, &conf.activate[BOXBARO], &__AUX2,
@@ -1924,7 +1924,7 @@ static char checkboxitemNames[][4] = {
     #if ACC
       "Ang","Hor",
     #endif
-    #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+    #if BARO
       "Bar",
     #endif
     #ifdef VARIOMETER

@@ -36,7 +36,7 @@ enum box {
     BOXANGLE,
     BOXHORIZON,
   #endif
-  #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
+  #if BARO
     BOXBARO,
   #endif
   #ifdef VARIOMETER
@@ -83,8 +83,16 @@ enum box {
     BOXGPSNAV,
     BOXLAND,
   #endif
+  #if BARO
+    BOXSAFEALT,
+  #endif
   CHECKBOXITEMS
 };
+
+typedef struct {
+    uint32_t    lastTime;
+    uint32_t    dTime;
+} timer_t;
 
 typedef struct {
   int16_t  accSmooth[3];
@@ -93,6 +101,16 @@ typedef struct {
   int16_t  gyroADC[3];
   int16_t  accADC[3];
 } imu_t;
+
+typedef struct {
+	float    accelEF[3];               // earth X,Y,Z acceleration in cm/s^2
+	float    accelEF_Filtered[3];      // earth X,Y,Z acceleration in cm/s^2
+	float    accelEF_Sum[3];
+	uint8_t  accelEF_Sum_count[3];
+	//float    accelEF_Horizontal;       // earth averaged horizontal acceleration in cm/s^2
+	float    velocityEF[3];            // ins earth velocity in cm/s
+	float    positionEF[3];            // ins position in cm
+} ins_t;
 
 typedef struct {
   uint8_t  vbat;               // battery voltage in 0.1V steps
@@ -104,13 +122,18 @@ typedef struct {
 } analog_t;
 
 typedef struct {
-  int32_t  EstAlt;             // in cm
-  int16_t  vario;              // variometer in cm/s
+  int32_t  estAlt;             // in cm
+  int16_t  estVario;           // variometer in cm/s
+  int32_t  rawAlt;			   // in cm
+  //int32_t  lastRawAlt;		   // in cm
+  int32_t  groundRawAlt;	   // in cm
+  //int16_t  rawVario;           // in cm/s
 } alt_t;
 
 typedef struct {
   int16_t angle[2];            // absolute angle inclination in multiple of 0.1 degree    180 deg = 1800
-  int16_t heading;             // variometer in cm/s
+  int16_t heading;             // in degree
+  int16_t angle_YAW;		   // angle in multiple of 0.1 degree    180 deg = 1800
 } att_t;
 
 typedef struct {
@@ -121,6 +144,7 @@ typedef struct {
   uint8_t HORIZON_MODE :1 ;
   uint8_t MAG_MODE :1 ;
   uint8_t BARO_MODE :1 ;
+  uint8_t SAFE_ALT_MODE :1 ;
 #ifdef HEADFREE
   uint8_t HEADFREE_MODE :1 ;
 #endif
@@ -135,9 +159,9 @@ typedef struct {
   uint8_t VARIO_MODE :1;
 #endif
   uint8_t GPS_mode: 2;               // 0-3 NONE,HOLD, HOME, NAV (see GPS_MODE_* defines
-#if BARO || GPS
-  uint8_t THROTTLE_IGNORED : 1;      // If it is 1 then ignore throttle stick movements in baro mode;
-#endif
+//#if BARO || GPS
+//  uint8_t THROTTLE_IGNORED : 1;      // If it is 1 then ignore throttle stick movements in baro mode;
+//#endif
 #if GPS
   uint8_t GPS_FIX :1 ;
   uint8_t GPS_FIX_HOME :1 ;
@@ -151,6 +175,7 @@ typedef struct {
 typedef struct {
   uint8_t currentSet;
   int16_t accZero[3];
+  uint16_t accScale[3];   // sensitivity correction (1000 for acc_1G)
   int16_t magZero[3];
   uint16_t flashsum;
   uint8_t checksum;      // MUST BE ON LAST POSITION OF STRUCTURE !
@@ -178,12 +203,12 @@ typedef struct {
   uint8_t dynThrPID;
   uint8_t thrMid8;
   uint8_t thrExpo8;
-  int16_t angleTrim[2]; 
+  int16_t angleTrim[2];
   #if defined(EXTENDED_AUX_STATES)
    uint32_t activate[CHECKBOXITEMS];  //Extended aux states define six different aux state for each aux channel
   #else
    uint16_t activate[CHECKBOXITEMS];
-  #endif 
+  #endif
   uint8_t powerTrigger1;
   #if MAG
     int16_t mag_declination;
@@ -245,10 +270,10 @@ typedef struct {
 
 //This is the mode what is selected via the remote (NONE, HOLD, RTH and NAV (NAV-> exectute mission)
 enum gpsmode {
-  GPS_MODE_NONE = 0, 
-  GPS_MODE_HOLD, 
-  GPS_MODE_RTH, 
-  GPS_MODE_NAV 
+  GPS_MODE_NONE = 0,
+  GPS_MODE_HOLD,
+  GPS_MODE_RTH,
+  GPS_MODE_NAV
 };
 
 enum navstate {
@@ -264,7 +289,9 @@ enum navstate {
   NAV_STATE_LAND_IN_PROGRESS,
   NAV_STATE_LANDED,
   NAV_STATE_LAND_SETTLE,
-  NAV_STATE_LAND_START_DESCENT
+  NAV_STATE_LAND_START_DESCENT,
+  NAV_STATE_WP_START,
+  NAV_STATE_LAND_DETECTED
 };
 
 enum naverror {
@@ -276,7 +303,7 @@ enum naverror {
   NAV_ERROR_TIMEWAIT,            //Waiting for poshold timer
   NAV_ERROR_INVALID_JUMP,        //Invalid jump target detected, aborting
   NAV_ERROR_INVALID_DATA,        //Invalid mission step action code, aborting, copter is adrift
-  NAV_ERROR_WAIT_FOR_RTH_ALT,    //Waiting to reach RTH Altitude
+  NAV_ERROR_WAIT_FOR_TARGET_ALT, //Waiting to reach RTH/WP Altitude
   NAV_ERROR_GPS_FIX_LOST,        //Gps fix lost, aborting mission
   NAV_ERROR_DISARMED,            //NAV engine disabled due disarm
   NAV_ERROR_LANDING              //Landing
@@ -284,7 +311,7 @@ enum naverror {
 
 typedef struct {
   uint8_t  number;     //Waypoint number
-  int32_t  pos[2];     //GPS position 
+  int32_t  pos[2];     //GPS position
   uint8_t  action;     //Action to follow
   int16_t  parameter1; //Parameter for the action
   int16_t  parameter2; //Parameter for the action
@@ -299,7 +326,7 @@ typedef struct {
   //Don't forget to change the reply size in GUI when change this struct;
 
   // on/off flags
-  // First byte 
+  // First byte
   uint8_t filtering : 1;
   uint8_t lead_filter : 1;
   uint8_t dont_reset_home_at_arm : 1;
@@ -307,7 +334,7 @@ typedef struct {
   uint8_t nav_tail_first : 1;
   uint8_t nav_rth_takeoff_heading : 1;
   uint8_t slow_nav : 1;
-  uint8_t wait_for_rth_alt : 1;
+  uint8_t wait_for_target_alt : 1;
   // Second byte
   uint8_t ignore_throttle: 1; // Disable stick controls during mission and RTH
   uint8_t takeover_baro: 1;
@@ -323,7 +350,7 @@ typedef struct {
   uint8_t  crosstrack_gain;     // * 100 (0-2.56)
   uint16_t nav_bank_max;        // degree * 100; (3000 default)
   uint16_t rth_altitude;        // in meter
-  uint8_t  land_speed;          // between 50 and 255 (100 approx = 50cm/sec)
+  uint8_t  min_nav_vario;      // in cm/s
   uint16_t fence;               // fence control in meters
 
   uint8_t  max_wp_number;
