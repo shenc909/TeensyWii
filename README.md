@@ -19,7 +19,7 @@ Changes:
 - reduced effect of air-cushion to avoid incorrect raw baro values and jumps near the ground accordingly (integrated with INS)
 - new SAFE_ALT_DURING_AH define. It helps to protect descending less than specified in define altitude. Activated when SAFE_ALT box activated in GUI.
 
-- precised GPS-INS position hold
+- precise, rapid, sensitive to external perturbations (wind, pushes) GPS-INS position hold (INS_PH_NAV_ON define)
 - possibility to fly with activated position hold and stop at predicted point on stick release (tunable by Pos-I value at GUI)
 - wait for target altitude at RTH and WP navigation
 - skip whole RTH cycle if distance less than RTH_RADIUS meters and make a landing
@@ -37,7 +37,7 @@ Changes:
 For more details please read release_note.txt, see config.h and also here http://forum.rcdesign.ru/blogs/83206/blog22332.html
 
 Tips and tricks:
-- for INS it's better to use u-blox modules with revision from 6 to 8 (although 7th was not tested). With MTK modules position hold is less precise but in also general ok, where PID parameters has to be ~20% less for its.
+- for INS it's better to use u-blox modules with revision from 6 to 8 (although 7th was not tested). With MTK modules position hold is less precise but in general it's ok also, where PID parameters has to be ~20% less for its.
 - for INS it's good to have calibrated accel in 3 axises with +/-512 for each axis with error +/-(1-3)
 - for configuration the best tool is https://play.google.com/store/apps/details?id=com.ezio.multiwii
 - for this release arduino 1.6.7 was used https://www.arduino.cc/en/Main/OldSoftwareReleases
