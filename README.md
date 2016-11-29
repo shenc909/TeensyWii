@@ -5,7 +5,7 @@ MahoWii rev 2.4
 
 Hi guys!
 
-Here is the last revision of my biggest project based on favorite Multiwii project.
+Here is the last revision of my favorite hobby project based on Multiwii project.
 In two words: it's pretty stable, improved and extended version of Multiwii.
 
 Changes:
