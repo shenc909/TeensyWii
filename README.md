@@ -43,7 +43,7 @@ Tips and tricks:
 - for this release arduino 1.6.7 was used https://www.arduino.cc/en/Main/OldSoftwareReleases
 - before 1st upload clean eeprom http://forum.rcdesign.ru/f123/thread283798-74.html#post4263236
 
-This firmware was optimized for AIOP (ALL IN ONE PRO Flight Controller), or other with Atmega1280/2560 + mpu6050 + ms5611 + hmc5883 (but take care about pinout).
+This firmware was optimized for AIOP (ALL IN ONE PRO Flight Controller), or other with Atmega1280/2560 + mpu6050 + ms5611 + hmc5883 (but take care about pinout). But you can try to play with other sensors also.
 
 Videos from my friend's youtube channel: 
 https://www.youtube.com/user/artnesterof/videos
