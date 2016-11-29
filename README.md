@@ -11,12 +11,13 @@ In two words: it's pretty stable, improved and extended version of Multiwii.
 Changes:
 - INS (inertial navigation system) integrated with GPS and Baro
 
-- completely different althold integrated with INS
+- completely different precise althold integrated with INS
 - right altitude management by setting desired vario (vertical speed) with throttle stick
 - single PID controller for hovering and altitude management
 - stable hovering trottle estimator/corrector by I-part of alt PID controller
 - smart land detector
 - reduced effect of air-cushion to avoid incorrect raw baro values and jumps near the ground accordingly (integrated with INS)
+- controllable by desired vario (vertical speed) landing 
 - new SAFE_ALT_DURING_AH define. It helps to protect descending less than specified in define altitude. Activated when SAFE_ALT box activated in GUI.
 
 - precise, rapid, sensitive to external perturbations (wind, pushes) GPS-INS position hold (INS_PH_NAV_ON define)
