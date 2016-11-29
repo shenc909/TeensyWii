@@ -49,6 +49,7 @@ Videos from my friend's youtube channel:
 https://www.youtube.com/user/artnesterof/videos
 
 Blogs:
+- http://www.multiwii.com/forum/viewtopic.php?f=8&t=7877
 - http://forum.rcdesign.ru/blogs/83206/
 
 Enjoy! ;)  
