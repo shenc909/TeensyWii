@@ -10,6 +10,7 @@ In two words: it's pretty stable, improved and extended version of Multiwii.
 
 Changes:
 - INS (inertial navigation system) integrated with GPS and Baro
+- predefined PIDs to fly out of the box for frames 330 and bigger
 
 - completely different precise althold integrated with INS
 - right altitude management by setting desired vario (vertical speed) with throttle stick
